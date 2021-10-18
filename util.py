@@ -19,6 +19,7 @@ class BinOp():
         self.num_params = len(self.bin_range)
         self.saved_params = []
         self.target_modules = []
+        self.alpha = []
 
         index = -1
         for m in model.modules():
@@ -28,6 +29,10 @@ class BinOp():
                     tmp = m.weight.data.clone()
                     self.saved_params.append(tmp)
                     self.target_modules.append(m.weight)
+                    n = m.weight.data[0].nelement()
+                    m = m.weight.data.norm(1, 3, keepdim=True) \
+                        .sum(2, keepdim=True).sum(1, keepdim=True).div(n)
+                    self.alpha.append(m)
 
     def binarization(self):
         self.meancenterConvParams()
@@ -51,10 +56,8 @@ class BinOp():
 
     def binarizeConvParams(self):
         for index in range(self.num_params):
-            n = self.target_modules[index].data[0].nelement()
             s = self.target_modules[index].data.size()
-            alpha = self.target_modules[index].data.norm(1, 3, keepdim=True)\
-                .sum(2, keepdim=True).sum(1, keepdim=True).div(n)
+            alpha = self.alpha[index].data
             self.target_modules[index].data = self.target_modules[index].data.sign()\
                 .mul(alpha.expand(s))
 
@@ -65,15 +68,16 @@ class BinOp():
     def updateBinaryWeightGrad(self):
         for index in range(self.num_params):
             weight = self.target_modules[index].data
-            n = weight[0].nelement()
-            s = weight.size()
-            m = weight.norm(1, 3, keepdim=True).sum(2, keepdim=True)\
-                .sum(1, keepdim=True).div(n).expand(s)
-            m[weight.lt(-1.0)] = 0
-            m[weight.gt(1.0)] = 0
-            m = m.mul(self.target_modules[index].grad.data)
-            m_add = weight.sign().mul(self.target_modules[index].grad.data)
-            m_add = m_add.sum(3, keepdim=True).sum(2, keepdim=True)\
-                .sum(1, keepdim=True).div(n).expand(s)
-            m_add = m_add.mul(weight.sign())
-            self.target_modules[index].grad.data = m.add(m_add).mul(1.0-1.0/s[1]).mul(n)
+            alpha = self.alpha[index].data
+            alpha[weight.lt(-1.0)] = 0
+            alpha[weight.gt(1.0)] = 0
+            self.target_modules[index].grad.data = alpha.\
+                mul(self.target_modules[index].grad.data)
+
+    def updateAlphaGrad(self):
+        for index in range(self.num_params):
+            weight = self.target_modules[index].data
+            m = self.target_modules[index].grad.data.mul(weight.sign())
+            m = m.sum(3, keepdim=True).sum(2, keepdim=True).\
+                sum(1, keepdim=True)
+            self.alpha[index].grad.data = m

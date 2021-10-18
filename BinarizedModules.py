@@ -45,7 +45,7 @@ class BinConv2d(nn.Module):
 
     def forward(self, input):
         x = self.bn(input)
-        # x = BinActive()(x)
+        x = BinActive()(x)
         if self.dropout_ratio != 0:
             x = self.dropout(x)
         if not self.Linear:
