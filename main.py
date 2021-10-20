@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import CIFAR_Data
-from Models import nin_bin
+from Model import nin_bin
 import util
 import argparse
 from torch.autograd import Variable
@@ -100,14 +100,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--lr', action='store', default='0.01', type=float,
                         help='the intial learning rate')
-    parser.add_argument('--pretrained', action='store_true',
-                        help='the path to the pretrained model')
-    parser.add_argument('--evaluate', action='store_true',
-                        help='evaluate the model')
     parser.add_argument('--epochs', action='store', default='0',
                         help='the start range of epoch')
-    parser.add_argument('--full', action='store_true',
-                        help='use full-precision')
     parser.add_argument('--expt_num', action='store', default=10,
                         help='the num of the experiment')
     args = parser.parse_args()
@@ -122,7 +116,6 @@ if __name__ == '__main__':
     testloader = CIFAR_Data.testloader
 
     type = 'nin'
-
 
     epochs = int(args.epochs)
     expt_num = int(args.expt_num)
@@ -143,7 +136,7 @@ if __name__ == '__main__':
             for m in model.modules():
                 if isinstance(m, nn.Conv2d):
                     m.weight.data.normal_(0, 0.05)
-                    m.bias.data.normal_(0, 0.0)
+                    m.bias.data.zero_(0, 0.0)
         else:
             print('==> Load pretrained model form', args.pretrained, '...')
             pretrained_model = torch.load('Experiment/' + type + '.pth.tar')
@@ -155,11 +148,11 @@ if __name__ == '__main__':
         model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
 
         # define solver and criterion
-        optimizer = optim.SGD(model.parameters(), lr=args.lr,
-                              momentum=0.9, weight_decay=5e-4)
+        # optimizer = optim.SGD(model.parameters(), lr=args.lr,
+        #                       momentum=0.9, weight_decay=5e-4)
         # BIN
-        # optimizer = optim.Adam(model.parameters(), lr=args.lr,
-        #                        weight_decay=0.00001)
+        optimizer = optim.Adam(model.parameters(), lr=args.lr,
+                               weight_decay=0.00001)
         criterion = nn.CrossEntropyLoss()
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
