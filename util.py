@@ -56,8 +56,9 @@ class BinOp():
 
     def binarizeConvParams(self):
         for index in range(self.num_params):
+            alpha = self.alpha[index].data
             self.target_modules[index].data = self.target_modules[index].data.sign()\
-                .mul(self.alpha)
+                .mul(alpha)
 
     def restore(self):
         for index in range(self.num_params):
