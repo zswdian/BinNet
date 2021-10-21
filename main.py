@@ -49,7 +49,7 @@ def train(epoch, expt_no):
         # restore the weights
         bin_op.restore()
         bin_op.updateBinaryWeightGrad()
-        bin_op.updateAlpha()
+        bin_op.updateAlphaGrad()
 
         optimizer.step()
 

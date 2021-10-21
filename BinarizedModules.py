@@ -45,6 +45,6 @@ class BinConv2d(nn.Module):
         if self.dropout_ratio != 0:
             x = self.dropout(x)
         x = self.conv(x)
-        x = self.alpha.expand(x.size()) * x
+        x = self.alpha * x
         x = self.relu(x)
         return x

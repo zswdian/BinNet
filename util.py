@@ -19,7 +19,11 @@ class BinOp():
         self.num_params = len(self.bin_range)
         self.saved_params = []
         self.target_modules = []
-        self.model = model
+
+        self.alpha = []
+        for key, value in dict(self.model.named_parameters()):
+            if 'alpha' in key:
+                self.alpha.append(value)
 
         index = -1
         for m in model.modules():
@@ -52,18 +56,14 @@ class BinOp():
 
     def binarizeConvParams(self):
         for index in range(self.num_params):
-            self.target_modules[index].data = self.target_modules[index].data.sign()
+            self.target_modules[index].data = self.target_modules[index].data.sign()\
+                .mul(self.alpha)
 
     def restore(self):
         for index in range(self.num_params):
             self.target_modules[index].data.copy_(self.saved_params[index])
 
     def updateBinaryWeightGrad(self):
-        alpha = []
-        for key, value in dict(self.model.named_parameters()):
-            if 'alpha' in key:
-                alpha.append(value)
-
         for index in range(self.num_params):
             weight = self.target_modules[index].data
             alpha = self.alpha[index].data
@@ -71,3 +71,12 @@ class BinOp():
             alpha[weight.gt(1.0)] = 0
             self.target_modules[index].grad.data = alpha.\
                 mul(self.target_modules[index].grad.data)
+
+    def updateAlphaGrad(self):
+        for index in range(self.num_params):
+            weight = self.target_modules[index].data
+            s = weight.size()
+            m = self.target_modules[index].grad.data.mul(weight.sign())
+            m = m.sum(3, keepdim=True).sum(2, keepdim=True).sum(1, keepdim=True)\
+                .expand(s)
+            self.alpha[index].grad.data = m
