@@ -51,7 +51,7 @@ def train(epoch, expt_no):
         if not args.full:
             bin_op.restore()
             bin_op.updateBinaryWeightGrad()
-            bin_op.updateAlphaGrad()
+            bin_op.updateAlpha()
 
         optimizer.step()
 

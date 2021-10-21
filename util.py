@@ -74,10 +74,11 @@ class BinOp():
             self.target_modules[index].grad.data = alpha.\
                 mul(self.target_modules[index].grad.data)
 
-    def updateAlphaGrad(self):
+    def updateAlpha(self):
         for index in range(self.num_params):
             weight = self.target_modules[index].data
-            m = self.target_modules[index].grad.data.mul(weight.sign())
-            m = m.sum(3, keepdim=True).sum(2, keepdim=True).\
-                sum(1, keepdim=True)
-            self.alpha[index].grad.data = m
+            s = weight.size()
+            n = weight.data[0].nelement()
+            m = weight.data.norm(1, 3, keepdim=True) \
+                .sum(2, keepdim=True).sum(1, keepdim=True).div(n).expand(s)
+            self.alpha[index].data = m
