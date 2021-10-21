@@ -21,7 +21,7 @@ class BinOp():
         self.target_modules = []
 
         self.alpha = []
-        for key, value in dict(self.model.named_parameters()):
+        for key, value in dict(model.named_parameters()).items():
             if 'alpha' in key:
                 self.alpha.append(value)
 
