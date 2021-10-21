@@ -127,19 +127,12 @@ if __name__ == '__main__':
         model = nin_bin.Net()
 
         # initialize the model
-        if not args.pretrained:
-            print('==> Initializing model parameters ...')
-            best_acc = 0
-            for m in model.modules():
-                if isinstance(m, nn.Conv2d):
-                    m.weight.data.normal_(0, 0.05)
-
-        else:
-            print('==> Load pretrained model form', args.pretrained, '...')
-            pretrained_model = torch.load('Experiment/' + type + '.pth.tar')
-            best_acc = pretrained_model['best_acc']
-            best_acc_output = pretrained_model['best_acc_output']
-            model.load_state_dict(pretrained_model['state_dict'])
+        print('==> Initializing model parameters ...')
+        best_acc = 0
+        for m in model.modules():
+            if isinstance(m, nn.Conv2d):
+                m.weight.data.normal_(0, 0.05)
+                m.bias.data.zero_()
 
         model.cuda()
         model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
