@@ -37,11 +37,7 @@ class BinConv2d(nn.Module):
         self.conv = nn.Conv2d(input_channels, output_channels, kernel_size=kernel_size,
                               stride=stride, padding=padding, groups=groups)
         self.relu = nn.ReLU(inplace=True)
-        s = self.conv.weight.size()
-        n = self.conv.weight.data[0].nelement()
-        m = self.conv.weight.data.norm(1, 3, keepdim=True) \
-            .sum(2, keepdim=True).sum(1, keepdim=True).div(n).expand(s)
-        self.alpha = nn.Parameter(m)
+        self.alpha = nn.Parameter(torch.randn(self.conv.weight.data.size()))
 
     def forward(self, input):
         x = self.bn(input)
@@ -49,5 +45,6 @@ class BinConv2d(nn.Module):
         if self.dropout_ratio != 0:
             x = self.dropout(x)
         x = self.conv(x)
+        x = self.alpha * x
         x = self.relu(x)
         return x

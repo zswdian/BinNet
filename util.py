@@ -51,13 +51,8 @@ class BinOp():
             self.saved_params[index].copy_(self.target_modules[index].data)
 
     def binarizeConvParams(self):
-        alpha = []
-        for key, value in dict(self.model.named_parameters()):
-            if 'alpha' in key:
-                alpha.append(value)
         for index in range(self.num_params):
-            self.target_modules[index].data = self.target_modules[index].data.sign().\
-                mul(alpha)
+            self.target_modules[index].data = self.target_modules[index].data.sign()
 
     def restore(self):
         for index in range(self.num_params):
