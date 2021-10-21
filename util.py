@@ -19,7 +19,7 @@ class BinOp():
         self.num_params = len(self.bin_range)
         self.saved_params = []
         self.target_modules = []
-        self.alpha = []
+        self.model = model
 
         index = -1
         for m in model.modules():
@@ -29,10 +29,6 @@ class BinOp():
                     tmp = m.weight.data.clone()
                     self.saved_params.append(tmp)
                     self.target_modules.append(m.weight)
-                    n = m.weight.data[0].nelement()
-                    m = m.weight.data.norm(1, 3, keepdim=True) \
-                        .sum(2, keepdim=True).sum(1, keepdim=True).div(n)
-                    self.alpha.append(m)
 
     def binarization(self):
         self.meancenterConvParams()
@@ -56,16 +52,18 @@ class BinOp():
 
     def binarizeConvParams(self):
         for index in range(self.num_params):
-            s = self.target_modules[index].data.size()
-            alpha = self.alpha[index].data
-            self.target_modules[index].data = self.target_modules[index].data.sign()\
-                .mul(alpha.expand(s))
+            self.target_modules[index].data = self.target_modules[index].data.sign()
 
     def restore(self):
         for index in range(self.num_params):
             self.target_modules[index].data.copy_(self.saved_params[index])
 
     def updateBinaryWeightGrad(self):
+        alpha = []
+        for key, value in dict(self.model.named_parameters()):
+            if 'alpha' in key:
+                alpha.append(value)
+
         for index in range(self.num_params):
             weight = self.target_modules[index].data
             alpha = self.alpha[index].data
@@ -73,12 +71,3 @@ class BinOp():
             alpha[weight.gt(1.0)] = 0
             self.target_modules[index].grad.data = alpha.\
                 mul(self.target_modules[index].grad.data)
-
-    def updateAlpha(self):
-        for index in range(self.num_params):
-            weight = self.target_modules[index].data
-            s = weight.size()
-            n = weight.data[0].nelement()
-            m = weight.data.norm(1, 3, keepdim=True) \
-                .sum(2, keepdim=True).sum(1, keepdim=True).div(n).expand(s)
-            self.alpha[index].data = m

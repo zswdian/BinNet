@@ -35,8 +35,7 @@ def train(epoch, expt_no):
 
     for batch_idx, (data, target) in enumerate(trainloader):
         # binarize the weights
-        if not args.full:
-            bin_op.binarization()
+        bin_op.binarization()
 
         # forwarding
         data, target = Variable(data.cuda()), Variable(target.cuda())
@@ -48,10 +47,9 @@ def train(epoch, expt_no):
         loss.backward()
 
         # restore the weights
-        if not args.full:
-            bin_op.restore()
-            bin_op.updateBinaryWeightGrad()
-            bin_op.updateAlpha()
+        bin_op.restore()
+        bin_op.updateBinaryWeightGrad()
+        bin_op.updateAlpha()
 
         optimizer.step()
 
@@ -69,8 +67,7 @@ def test(expt_no):
     test_loss = 0
     correct = 0
 
-    if not args.full:
-        bin_op.binarization()
+    bin_op.binarization()
 
     with torch.no_grad():
         for data, target in testloader:
@@ -136,7 +133,7 @@ if __name__ == '__main__':
             for m in model.modules():
                 if isinstance(m, nn.Conv2d):
                     m.weight.data.normal_(0, 0.05)
-                    m.bias.data.zero_(0, 0.0)
+
         else:
             print('==> Load pretrained model form', args.pretrained, '...')
             pretrained_model = torch.load('Experiment/' + type + '.pth.tar')
@@ -157,13 +154,7 @@ if __name__ == '__main__':
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
         # define the binarization operator
-        if not args.full:
-            bin_op = util.BinOp(model)
-
-        # do the evaluation if specified
-        if args.evaluate:
-            test(i + 1)
-            exit(0)
+        bin_op = util.BinOp(model)
 
         best_acc = 0
 
